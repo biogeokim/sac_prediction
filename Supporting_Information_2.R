@@ -29,7 +29,9 @@ airbnb.xvec <- c('poverty', 'crowded', 'dependency', 'without_hs', 'unemployed',
 
 airbnb.result2 <- sf_analysis(airbnb, yvec = airbnb.yvec, xvec = airbnb.xvec, mode = 'area')
 airbnb.xm <- X.sac(airbnb, airbnb.xvec, 'area')
-
+airbnb.xm <- data.frame(XMI = sapply(airbnb.xm, rep, nrow(airbnb.result2)) %>% 
+                          apply(1, mean)) %>% 
+  mutate(NX = length(airbnb.xvec))
 
 ## 2. Baltimore Housing ####
 balt <- balt %>% st_transform(crs = 3857) %>% 
@@ -42,7 +44,10 @@ balt.xvec <- colnames(balt)[3:13]
 
 balt.result2 <- sf_analysis(balt, yvec = balt.yvec, xvec = balt.xvec, mode = 'point')
 balt.xm <- X.sac(balt, balt.xvec, 'point')
-
+balt.xm <- bind_rows(balt.xm, balt.xm) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(balt.xvec))
 
 ## 3. Boston Housing ####
 bost <- bost %>% st_transform(crs = 3857)# %>% 
@@ -52,7 +57,10 @@ bost.yvec <- c('CMEDV')
 bost.xvec <- bost.sp %>% colnames %>% .[11:23]
 
 bost.result2 <- sf_analysis(bost.sp, bost.yvec, bost.xvec, 'point')
-bost.xm <- X.sac(bost, bost.xvec, 'point')
+bost.xm <- X.sac(bost, bost.xvec, 'point') %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(bost.xvec))
 
 
 ## 4. Industry mixes ####
@@ -87,15 +95,25 @@ imix.result.l <- imix.lp %>%
   lapply(function(x) sf_analysis(x, imix.yvec, imix.xvec, 'area'))
 imix.result2 <- imix.result.l %>% do.call(rbind, .)
 
+imix.xm <- lapply(imix.lp, function(x) 
+  X.sac(x, colnames(x)[grep(paste(imix.xvec, collapse = '|'), colnames(x))], mode = 'area')) %>% 
+  do.call(rbind, .)
+imix.xm <- data.frame(sapply(imix.xm, function(x) rep(x, each = 18))) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(imix.xvec))
 
 ## 5. Chicago Health and Socio-Economic ####
 chhs.std <- chhs %>% mutate_at(.vars = vars(62:65, 70:86), .funs = list(~scale(.)))
 chhs.yvec <- colnames(chhs)[70:86]
 chhs.xvec <- colnames(chhs)[62:65]
 
-chhs.results2 <- sf_analysis(chhs.std, yvec = chhs.yvec, xvec = chhs.xvec, mode = 'area')
+chhs.result2 <- sf_analysis(chhs.std, yvec = chhs.yvec, xvec = chhs.xvec, mode = 'area')
 chhs.xm <- X.sac(chhs, colnames(chhs)[62:65], mode = 'area')
-
+chhs.xm <- data.frame(sapply(chhs.xm, function(x) rep(x, each = 17))) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(chhs.xvec))
 
 ## 6. Chicago Health Indicators ####
 hein <- hein %>% st_transform(crs = 3857)
@@ -106,7 +124,10 @@ hein.xvec <- colnames(hein)[26:31]
 
 hein.result2 <- sf_analysis(hein.sp, hein.yvec, hein.xvec, 'area')
 hein.xm <- X.sac(hein.sp, hein.xvec, 'area')
-
+hein.xm <- data.frame(sapply(hein.xm, rep, 21)) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(hein.xvec))
 
 ## 7. Cincinnati Crime ####
 cinc <- cinc %>% st_transform(crs = 3857) %>% 
@@ -126,7 +147,10 @@ cinc.xvec <- c('HH_NON', 'HU_VACANT', 'GROUP_QUAR', 'GQ_NONINST', 'NONWHITE', 'J
 
 cinc.result2 <- sf_analysis(cinc, cinc.yvec, cinc.xvec, 'area')
 cinc.xm <- X.sac(cinc, cinc.xvec, 'area')
-
+cinc.xm <- data.frame(sapply(cinc.xm, rep, 3)) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(cinc.xvec))
 
 ## 8. Columbus Crime ####
 colu <- colu %>% st_transform(3857)
@@ -137,8 +161,10 @@ colu.yvec <- c('CRIME')
 colu.xvec <- c('INC', 'HOVAL', 'OPEN', 'PLUMB', 'DISCBD', 'NSA', 'NSB', 'EW', 'CP')
 
 colu.result2 <- sf_analysis(colu.sp, colu.yvec, colu.xvec, 'area')
-colu.xm <- X.sac(colu, colu.xvec, 'area')
-
+colu.xm <- X.sac(colu, colu.xvec, 'area') %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(colu.xvec))
 
 ## 9. Denver Crime ####
 denv <- denv %>% 
@@ -171,7 +197,10 @@ denv.xvec <- c('pnonwhite', 'pvacant', 'prent', 'psinglef', 'pjuvenile')
 
 denv.result2 <- sf_analysis(denv.a, denv.yvec, denv.xvec, 'area')
 denv.xm <- X.sac(denv.a, denv.xvec, 'area')
-
+denv.xm <- data.frame(sapply(denv.xm, rep, 199)) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(denv.xvec))
 
 ## 10. Natregimes (National Crime) ####
 nat <- nat %>% st_transform(3857)
@@ -211,16 +240,32 @@ nats.f70 <- HR70 ~ RD70 + PS70 + UE70 + DV70 + MA70
 nats.f80 <- HR80 ~ RD80 + PS80 + UE80 + DV80 + MA80
 nats.f90 <- HR90 ~ RD90 + PS90 + UE90 + DV90 + MA90
 
-nats.xm60 <- X.sac(nat, xvars = as.character(nats.f60)[3] %>% strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')
-nats.xm70 <- X.sac(nat, xvars = as.character(nats.f70)[3] %>% strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')
-nats.xm80 <- X.sac(nat, xvars = as.character(nats.f80)[3] %>% strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')
-nats.xm90 <- X.sac(nat, xvars = as.character(nats.f90)[3] %>% strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')
+nats.xm60 <- lapply(nats,
+                    function(x) X.sac(x, xvars = as.character(nats.f60)[3] %>% 
+                                        strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')) %>% 
+  do.call(bind_rows, .) %>% 
+  as.matrix
+nats.xm70 <- lapply(nats,
+                    function(x) X.sac(x, xvars = as.character(nats.f70)[3] %>% 
+                                        strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')) %>% 
+  do.call(bind_rows, .) %>% 
+  as.matrix
+nats.xm80 <- lapply(nats,
+                    function(x) X.sac(x, xvars = as.character(nats.f80)[3] %>% 
+                                        strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')) %>% 
+  do.call(bind_rows, .) %>% 
+  as.matrix
+nats.xm90 <- lapply(nats,
+                    function(x) X.sac(x, xvars = as.character(nats.f90)[3] %>% 
+                                        strsplit(., split = ' + ', fixed = T) %>% .[[1]], mode = 'area')) %>% 
+  do.call(bind_rows, .) %>% 
+  as.matrix
 
-nats.xm2 <- data.frame(matrix(c(nats.xm60, nats.xm70, nats.xm80, nats.xm90), nrow = 4, byrow = T)) %>% 
-  .[rep(seq_len(nrow(.)), 35),]
-nats.xm22 <- nats.xm2 %>% 
-  mutate_each(funs = funs(do.call(c, .)))
-colnames(nats.xm22) <- c('RD', 'PS', 'UE', 'DV', 'MA')
+nats.xm <- rbind(nats.xm60, nats.xm70, nats.xm80, nats.xm90) %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(nats.xvec))
+
 
 nats.result2 <- bind_rows(
   nats.res.l60,
@@ -255,7 +300,10 @@ elec.xvec <- c('ELDER14', 'WHITE14', 'FEMALE14', 'LATINO14',
 elec16.result2 <- sf_analysis(elec.sp, elec.yvec1, elec.xvec, 'area')
 elec12.result2 <- sf_analysis(elec.sp, elec.yvec2, elec.xvec, 'area')
 
-elec.xm <- X.sac(elec.sp, elec.xvec, 'area')
+elec.xm <- X.sac(elec.sp, elec.xvec, 'area') %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(elec.xvec))
 
 
 ## 12. Phoenix ACS ####
@@ -265,8 +313,10 @@ phx.yvec <- c('inc')
 phx.xvec <- c('renter_rt', 'vac_hsu_rt', 'white_rt', 'black_rt', 'hisp_rt', 'fem_nh_rt')
 
 phx.result2 <- sf_analysis(phx, phx.yvec, phx.xvec, 'area')
-phx.xm <- X.sac(phx, phx.xvec, 'area')
-
+phx.xm <- X.sac(phx, phx.xvec, 'area') %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(phx.xvec))
 
 ## 13. MSA Employment ####
 ## MSA Employment (Charleston, South Carolina)
@@ -314,7 +364,11 @@ msas.result2 <- msas.result.l %>% do.call(rbind, .)
 
 msas.xm <- msas.sts %>% 
   lapply(function(x) X.sac(x, msas.xvec, 'area'))
-msas.xm2 <- msas.xm %>% do.call(bind_rows, .) %>% .[rep(seq_len(nrow(.)), each = 8),]
+msas.xm2 <- msas.xm %>% do.call(bind_rows, .) %>% 
+  .[rep(seq_len(nrow(.)), each = 8),] %>% 
+  apply(1, mean) %>% 
+  data.frame(XMI = .) %>% 
+  mutate(NX = length(msas.xvec))
 
 
 ## 14. New York Education ####
@@ -346,7 +400,9 @@ nyet.xm.l <- nyet %>%
 
 nyet.result <- nyet.result.l %>% do.call(rbind, .)
 nyet.xm <- nyet.xm.l %>% do.call(rbind, .)
-
+nyet.xm <- data.frame(XMI = sapply(nyet.xm, function(x) rep(x, each = 7)) %>% 
+                        apply(1, mean)) %>% 
+  mutate(NX = length(nyet.xvec))
 
 ## 15. New York Unemployment ####
 st_crs(nyt) <- 4326
@@ -391,6 +447,9 @@ nyts.xm.l <- nyts %>%
 
 nyts.result <- nyts.result.l %>% do.call(rbind, .)
 nyts.xm <- nyts.xm.l %>% do.call(rbind, .)
+nyts.xm <- data.frame(XMI = sapply(nyts.xm, function(x) rep(x, each = 7)) %>% 
+                        apply(1, mean)) %>% 
+  mutate(NX = length(nyts.xvec))
 
 
 ## To gather each result
@@ -429,9 +488,9 @@ all.results.a <-
     elec.xm,
     elec.xm,
     phx.xm,
-    msas.xm,
+    msas.xm2,
     nyet.xm,
     nyts.xm
   )
 
-all.results <- bind_cols(all.results, all.results.a)
+df.final <- bind_cols(all.results, all.results.a)
